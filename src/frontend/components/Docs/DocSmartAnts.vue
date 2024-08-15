@@ -197,7 +197,7 @@
       getSvg() {
         const RelevantStyles = {
           rect: ['fill', 'stroke', 'stroke-width'],
-          path: ['fill', 'stroke', 'stroke-width'],
+          path: ['fill', 'stroke', 'stroke-width', 'stroke-linejoin', 'stroke-linecap'],
           circle: ['fill', 'stroke', 'stroke-width'],
           line: ['stroke', 'stroke-width'],
           text: ['fill', 'font-size', 'font-family', 'text-anchor'],
