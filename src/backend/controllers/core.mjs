@@ -5,7 +5,7 @@ import queries from '../../global/jsonata/queries.mjs';
 import helpers from './helpers.mjs';
 import compression from '../../global/compress/compress.mjs';
 import {getRoles} from '../helpers/jwt.mjs';
-import {DEFAULT_ROLE, getCurrentRuleId, getCurrentRules, isRolesMode} from "../utils/rules.mjs";
+import {DEFAULT_ROLE, getCurrentRuleId, getCurrentRules, isRolesMode} from '../utils/rules.mjs';
 
 const compressor = compression();
 
@@ -84,7 +84,7 @@ export default (app) => {
             return;
         } else {
             if(isRolesMode()) {
-                app.storage = {...app.storage, manifests: null}
+                app.storage = {...app.storage, manifests: null};
             }
             const oldHash = app.storage.hash;
             storeManager.reloadManifest(app)
@@ -119,7 +119,7 @@ export default (app) => {
             };
         }
 
-        cache.pullFromCache(app.storage.hash, JSON.stringify(key), async () => {
+        cache.pullFromCache(app.storage.hash, JSON.stringify(key), async() => {
                 if (request.query.startsWith('/'))
                     return await datasets(app).releaseData(request.query, request.params);
                 else {
@@ -140,9 +140,14 @@ export default (app) => {
                             return;
                         }
                         return await ds.getData(path.context, profile, params, path.baseURI);
-                    } else {
-                        return await ds.getData(storageManifest, profile, params);
+                    } 
+                    if (profile.separateDatasets && typeof profile.origin === 'object') {
+                        const origin = await Promise.all(Object.keys(profile.origin).map(async(id) => {
+                            return { [id]: await ds.releaseData(`/datasets/${id}`) };
+                        }));
+                        return await ds.getData(origin, { source: profile.source}, params);
                     }
+                    return await ds.getData(storageManifest, profile, params);
                 }
             }, res);
     });

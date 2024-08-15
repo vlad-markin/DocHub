@@ -122,7 +122,7 @@
         autoExec: cookie.get(COOKIE_NAME_AUTOEXEC) === 'false' ? false : true,
         origin: null,   // Выбранный базовый источник
         origins: [],    // Список доступных источников данных
-        isOriginAvailable: !env.isBackendMode(), // Определяет доступен ли выбор origin
+        isOriginAvailable: true, // Определяет доступен ли выбор origin
         logHeaders: [
           {
             text: 'Таймлайн',
@@ -189,10 +189,10 @@
         this.doAutoExecute();
       },
       refreshOrigins() {
-        const pipe = query.expression(`[(datasets.$spread().{
+        const pipe = query.expression(`([(datasets.$spread().{
           "id": $keys()[0],
           "title": *.title
-        })]`, null, null, true, { log: this.log});
+      })])`, null, null, true, { log: this.log});
         pipe.evaluate().then((data) => this.origins = data);
       },
       doAutoExecute() {
