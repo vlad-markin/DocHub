@@ -195,14 +195,24 @@
       },
       // Возвращает SVG код диаграммы
       getSvg() {
+        const RelevantStyles = {
+          rect: ['fill', 'stroke', 'stroke-width'],
+          path: ['fill', 'stroke', 'stroke-width'],
+          circle: ['fill', 'stroke', 'stroke-width'],
+          line: ['stroke', 'stroke-width'],
+          text: ['fill', 'font-size', 'font-family', 'text-anchor'],
+          tspan: ['font-family'],
+          polygon: ['stroke', 'fill']
+        };
         const addStyle = function(children) {
           for (let i = 0; i < children.length; i++) {
             let child = children[i];
+            let tag = child.tagName;
             if (child instanceof Element) {
               let cssText = '';
               let computedStyle = window.getComputedStyle(child, null);
-              for (let i = 0; i < computedStyle.length; i++) {
-                let prop = computedStyle[i];
+              for (let i = 0; i < RelevantStyles[tag]?.length ?? 0; i++) {
+                const prop = RelevantStyles[tag][i];
                 cssText += prop + ':' + computedStyle.getPropertyValue(prop) + ';';
               }
               child.setAttribute('style', cssText);
