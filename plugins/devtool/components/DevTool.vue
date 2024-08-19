@@ -205,6 +205,7 @@
         const oldTab = this.tabs[id];
         this.addTab();
         this.tabs[this.tabs.length - 1].code = oldTab.code;
+        this.tabs[this.tabs.length - 1].origins = [...oldTab.origins];
       },
       delTab(id) {
         this.tabs.splice(id, 1);
@@ -248,18 +249,24 @@
         this.baseExec(currentTab);
       },
       async baseExec(currentTab){
-        const origins = currentTab.origins.length > 1 ? currentTab.origins.reduce((acc, ele) => {acc[ele] = ele; return acc;} ,{}) : currentTab.origins[0];
+        const origins = currentTab.origins.length > 1
+          ? currentTab.origins.reduce((acc, ele) => {acc[ele] = ele; return acc;} ,{})
+          : currentTab.origins[0];
         const subject = {
           source: `(${currentTab.code})`
         };
         let originContext;
+        // метод getData() хелпера датасет-драйвера в режиме бекенда не пересылает контекст,
+        // из-за чего передача датасета выглядит по-разному в двух режимах.
         if (env.isBackendMode()) {
           subject.origin = origins;
           subject.separateDatasets = true;
         } else {
-          originContext = currentTab.origins.length > 1 ? await Promise.all(Object.keys(origins).map(async(id) => {
-            return { [id]: await this.pullData(id) };
-          })) : await this.pullData(origins);
+          originContext = currentTab.origins.length > 1
+            ? await Promise.all(Object.keys(origins).map(async(id) => {
+              return { [id]: await this.pullData(id) };
+            }))
+            : await this.pullData(origins);
         }
         this.pullData(subject, null, null, originContext).then(response => {
           if (response){

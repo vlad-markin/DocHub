@@ -12,7 +12,6 @@
             </v-toolbar-title>
             <v-spacer />
             <v-autocomplete
-              v-if="isOriginAvailable"
               v-model="origin"
               multiple
               hide-details
@@ -122,7 +121,6 @@
         autoExec: cookie.get(COOKIE_NAME_AUTOEXEC) === 'false' ? false : true,
         origin: null,   // Выбранный базовый источник
         origins: [],    // Список доступных источников данных
-        isOriginAvailable: true, // Определяет доступен ли выбор origin
         logHeaders: [
           {
             text: 'Таймлайн',
@@ -235,24 +233,37 @@
         cookie.set(COOKIE_NAME_QUERY, this.query, 365);
         this.error = null;
         this.logItems = [];
-        this.jsonata = query.expression(`(${this.query})`, null, null, true, { log: this.log});
-        this.jsonata.evaluate(context).then((data) => {
-          const result = JSON.stringify(data, null, 4);
-          this.logItems.push({
-            id: this.logItems.length,
-            moment: ((this.jsonata.trace?.end - this.jsonata.trace?.start || 0) * 0.001).toFixed(5),
-            tag: 'END',
-            value: result
-          });
-          this.selectedLog = this.logItems.length - 1;
-        }).catch((e) => this.error = e);
+        if (env.isBackendMode() && this.origin) {
+          const origin = this.origin.length > 1
+            ? this.origin.reduce((acc, ele) => {acc[ele] = ele; return acc;} ,{})
+            : this.origin[0];
+          datasets().getData(null, {
+            origin: origin,
+            source: `(${this.query})`,
+            separateDatasets: true
+          }).then((data) => {
+            this.log(JSON.stringify(data, null, 4), 'END');
+          }).catch((err) => this.error = err);
+        } else {
+          this.jsonata = query.expression(`(${this.query})`, null, null, true, { log: this.log});
+          this.jsonata.evaluate(context).then((data) => {
+            const result = JSON.stringify(data, null, 4);
+            this.logItems.push({
+              id: this.logItems.length,
+              moment: ((this.jsonata.trace?.end - this.jsonata.trace?.start || 0) * 0.001).toFixed(5),
+              tag: 'END',
+              value: result
+            });
+            this.selectedLog = this.logItems.length - 1;
+          }).catch((e) => this.error = e);
+        }
       },
       onExecute(force) {
         this.observer && clearTimeout(this.observer);
         if (this.autoExec || force) {
           this.observer = setTimeout(async() => {
             this.observer = null;
-            if (this.origin && this.isOriginAvailable) {
+            if (this.origin && !env.isBackendMode()) {
               this.origin.length > 1 ?
                 this.doExecute(
                   await Promise.all(this.origin.map(async(origin) => {
