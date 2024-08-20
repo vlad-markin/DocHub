@@ -606,6 +606,9 @@
           this.landscape.viewBox.width = width + 48;
           this.$el.style.height = `${height * (clientWidth / width) + 60}px`;
         }
+
+        this.$el.setAttribute('width', `${width}px`);
+        this.$el.setAttribute('height', `${height}px`);
       },
       // Перестроение презентации
       rebuildPresentation(nodes, links) {
