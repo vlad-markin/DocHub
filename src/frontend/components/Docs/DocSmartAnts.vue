@@ -196,13 +196,11 @@
       // Возвращает SVG код диаграммы
       getSvg() {
         const RelevantStyles = {
-          rect: ['fill', 'stroke', 'stroke-width'],
-          path: ['fill', 'stroke', 'stroke-width', 'stroke-linejoin', 'stroke-linecap'],
-          circle: ['fill', 'stroke', 'stroke-width'],
-          line: ['stroke', 'stroke-width'],
-          text: ['fill', 'font-size', 'font-family', 'text-anchor'],
-          tspan: ['font-family'],
-          polygon: ['stroke', 'fill']
+          g: ['opacity'],
+          rect: ['stroke', 'stroke-width', 'font-size', 'fill', 'opacity', 'stroke-linejoin', 'filter'],
+          path: ['opacity', 'stroke', 'stroke-width', 'stroke-linejoin', 'stroke-linecap', 'fill', 'z-index'],
+          use: ['opacity'],
+          text: ['opacity', 'fill', 'font-size', 'font-family', 'z-index', 'color', 'stroke', 'line-height', 'font-weight', 'text-rendering', 'text-size-adjust']
         };
         const addStyle = function(children) {
           for (let i = 0; i < children.length; i++) {
