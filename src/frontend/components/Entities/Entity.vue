@@ -115,7 +115,7 @@
         !this.refresher && this.reloadProfile().then(() => this.$nextTick(this.refreshPres));
       },
       currentPresentation() {
-        this.reloadProfile();
+        this.reloadProfile(false);
       }
     },
     mounted() {
@@ -126,12 +126,12 @@
         return `("${path.slice(1).split('/').join('"."')}")`;
       },
       // Перезагружает профиль сущности
-      reloadProfile() {
+      reloadProfile(resetSwitchedPresentation = true) {
         return new Promise((success, reject) => {
           if (this.refresher) clearTimeout(this.refresher);
           this.profileLoaded = false;
           this.refresher = setTimeout(() => {
-            this.switchedPresentation = null;
+            if (resetSwitchedPresentation) this.switchedPresentation = null;
             const dateLakeId = this.makeDataLakeID(this.entityPath);
             query.expression(dateLakeId).evaluate()
               .then((data) => {
