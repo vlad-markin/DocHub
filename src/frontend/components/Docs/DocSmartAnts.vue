@@ -196,11 +196,9 @@
       // Возвращает SVG код диаграммы
       getSvg() {
         const RelevantStyles = {
-          g: ['opacity'],
-          rect: ['stroke', 'stroke-width', 'font-size', 'fill', 'opacity', 'stroke-linejoin', 'filter'],
-          path: ['opacity', 'stroke', 'stroke-width', 'stroke-linejoin', 'stroke-linecap', 'fill', 'z-index'],
-          use: ['opacity'],
-          text: ['opacity', 'fill', 'font-size', 'font-family', 'z-index', 'color', 'stroke', 'line-height', 'font-weight', 'text-rendering', 'text-size-adjust']
+          rect: ['font-size', 'fill', 'filter', 'opacity', 'stroke', 'stroke-linejoin', 'stroke-width'],
+          path: ['fill', 'opacity', 'stroke', 'stroke-linecap', 'stroke-linejoin', 'stroke-width', 'z-index'],
+          text: ['color', 'fill', 'font-family', 'font-size', 'font-weight', 'line-height', 'opacity', 'stroke', 'text-rendering', 'text-size-adjust', 'z-index']
         };
         const addStyle = function(children) {
           for (let i = 0; i < children.length; i++) {
@@ -213,7 +211,7 @@
                 const prop = RelevantStyles[tag][i];
                 cssText += prop + ':' + computedStyle.getPropertyValue(prop) + ';';
               }
-              child.setAttribute('style', cssText);
+              cssText && child.setAttribute('style', cssText);
               addStyle(child.childNodes);
             }
           }
