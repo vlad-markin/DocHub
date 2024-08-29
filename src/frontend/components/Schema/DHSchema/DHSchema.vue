@@ -605,6 +605,7 @@
           this.landscape.viewBox.left = this.presentation.valueBox.x - 24;
           this.landscape.viewBox.width = width + 48;
           this.$el.style.height = `${height * (clientWidth / width) + 60}px`;
+          this.$el.style.height = `${clientWidth}px`;
         }
 
         this.$el.setAttribute('width', `${width}px`);
