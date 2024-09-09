@@ -8,6 +8,8 @@ import ajv from 'ajv';
 import mustache from 'mustache';
 import request from '../helpers/request.mjs';
 import md5 from 'md5';
+import {getUserName} from '../helpers/jwt.mjs';
+import {isRolesMode} from "../utils/rules.mjs";
 
 export default function(app) {
 
@@ -15,6 +17,14 @@ export default function(app) {
     app.get('/entities/:entity/presentations/:presentation', async(req, res) => {
         // Проверяем, что готовы обрабатывать запросы
         if (!helpers.isServiceReady(app, res)) return;
+
+
+        const start = Date.now();
+        let userName;
+
+        if(isRolesMode()) {
+            userName = getUserName(req.headers);
+        }
 
         const entityID = req.params.entity;
         const presentationID = req.params.presentation;
@@ -102,5 +112,11 @@ export default function(app) {
                 error: e
             });
         }
+        const jsonLog = JSON.stringify({
+          userName,
+          time: Date.now() - start,
+          originalUrl: req.originalUrl
+        })
+        logger.log(jsonLog, LOG_TAG);
     });
 }
