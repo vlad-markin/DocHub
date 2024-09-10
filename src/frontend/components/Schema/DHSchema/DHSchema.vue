@@ -601,11 +601,16 @@
           this.landscape.viewBox.left = - delta + this.presentation.valueBox.x;
           this.landscape.viewBox.width = width + delta * 2;
           this.$el.style.height = `${height + 60}px`;
+          this.$el.style.width = `${width}px`;
         } else {
           this.landscape.viewBox.left = this.presentation.valueBox.x - 24;
           this.landscape.viewBox.width = width + 48;
           this.$el.style.height = `${height * (clientWidth / width) + 60}px`;
+          this.$el.style.width = `${clientWidth}px`;
         }
+
+        this.$el.setAttribute('width', `${width}px`);
+        this.$el.setAttribute('height', `${height}px`);
       },
       // Перестроение презентации
       rebuildPresentation(nodes, links) {
