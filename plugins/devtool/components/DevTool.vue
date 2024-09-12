@@ -27,6 +27,29 @@
           </v-list-item>
         </v-list>
       </v-menu>
+      <v-autocomplete
+        v-bind:value="currentOrigins"
+        multiple
+        hide-details
+        clearable
+        v-bind:items="origins"
+        label="origin"
+        title="Базовый источник данных"
+        item-text="id"
+        item-value="id"
+        prepend-icon="mdi-semantic-web"
+        single-line
+        v-on:change="onOriginChange">
+        <template #selection="data">
+          <v-chip
+            close
+            v-bind="data.attrs"
+            v-bind:input-value="data.selected"
+            v-on:click:close="() => deleteOrigin(data.item.id)">
+            {{ data.item.id }}
+          </v-chip>
+        </template>
+      </v-autocomplete>
       <template #extension>
         <v-tabs v-model="selectedTab" show-arrows>
           <v-tab v-for="(tab, index) in tabs" v-bind:key="tab.id" class="tab">
@@ -77,23 +100,17 @@
   import ResponseComponent from './ResponseComponent.vue';
   import env from '@front/helpers/env';
 
-  const backendFileStorageURL = env.backendFileStorageURL();
-
   function uuidv4() {
     return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c =>
       (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
     );
   }
 
-  function isServerFailStatus(statusCode) {
-    return [403, 404, 501, 502, 503, 504].includes(statusCode);
-  }
-
   const COOKIE_NAME_AUTOEXEC = 'json-dev-tool-new-autoexec';
   const COOKIE_NAME_AUTOEXPAND = 'json-dev-tool-new-autoexpand';
   const LOCALSTORAGE_NAME_TABS = 'json-dev-tool-new-tabs';
   const COOKIE_NAME_SELECTEDTAB = 'json-dev-tool-new-selectedtab';
-  const TAB_DEFAULT = { 'response': {}, 'loading': false, 'error': null, 'unexpectedError': null, 'controller': null, 'emptyData': null};
+  const TAB_DEFAULT = { 'origins': [], 'response': {}, 'loading': false, 'error': null, 'unexpectedError': null, 'controller': null, 'emptyData': null};
 
 
   export default {
@@ -111,8 +128,15 @@
         tabsCounter: 0,
         tabs: [],
         autoExpand: cookie.get(COOKIE_NAME_AUTOEXPAND) === 'true' ? true : false,
-        autoExec: cookie.get(COOKIE_NAME_AUTOEXEC) === 'false' ? false : true
+        autoExec: cookie.get(COOKIE_NAME_AUTOEXEC) === 'false' ? false : true,
+        origins: [],
+        debounceTimeout: null
       };
+    },
+    computed: {
+      currentOrigins() {
+        return this.tabs[this.selectedTab]?.origins ?? [];
+      }
     },
     watch: {
       autoExec(value) {
@@ -131,7 +155,6 @@
       }
     },
     mounted() {
-
       this.onRefresh();
     },
     methods: {
@@ -140,7 +163,7 @@
           try {
             const tabs = JSON.parse(localStorage.getItem(LOCALSTORAGE_NAME_TABS));
             this.tabs = tabs.map(tab => ({
-              ...tab, ...TAB_DEFAULT
+              ...TAB_DEFAULT, ...tab
             }));
             this.tabsCounter = this.tabs.length;
             this.exec();
@@ -152,12 +175,23 @@
         this.addTab();
       },
       onRefresh() {
+        this.refreshOrigins();
         if (this.refresher) clearTimeout(this.refresher);
         this.refresher = setTimeout(this.doRefresh, 50);
       },
+      refreshOrigins() {
+        this.pullData(`(datasets.$spread().{
+          "id": $keys()[0],
+          "title": *.title
+        })`).then((response) => this.origins = response);
+      },
+      deleteOrigin(originId) {
+        this.tabs[this.selectedTab].origins = this.tabs[this.selectedTab]?.origins.filter((id) => id !== originId) ?? [];
+        this.manualAutoExec(true);
+      },
       saveTabsToLocalStorage(){
         const tabs = this.tabs.map(tab => ({
-          'id': tab.id, 'name': tab.name, 'code': tab.code
+          'id': tab.id, 'name': tab.name, 'code': tab.code, 'origins': tab.origins
         }));
         localStorage.setItem(LOCALSTORAGE_NAME_TABS, JSON.stringify(tabs));
       },
@@ -171,6 +205,7 @@
         const oldTab = this.tabs[id];
         this.addTab();
         this.tabs[this.tabs.length - 1].code = oldTab.code;
+        this.tabs[this.tabs.length - 1].origins = [...oldTab.origins];
       },
       delTab(id) {
         this.tabs.splice(id, 1);
@@ -188,6 +223,14 @@
       manualExec(){
         this.exec();
       },
+      manualAutoExec(now) {
+        if (this.autoExec) {
+          clearTimeout(this.debounceTimeout);
+          this.debounceTimeout = setTimeout(() => {
+            this.exec();
+          }, now ? 0 : 500);
+        }
+      },
       exec(){
         const currentTab = this.tabs[this.selectedTab];
 
@@ -203,75 +246,48 @@
           return;
         }
 
-        if (env.isBackendMode()){
-          this.backendExec(currentTab);
-        }else{
-          this.baseExec(currentTab);
-        }
+        this.baseExec(currentTab);
       },
-      baseExec(currentTab){
-        this.pullData(`(${currentTab.code})`).then(response => {
+      async baseExec(currentTab){
+        const origins = currentTab.origins.length > 1
+          ? currentTab.origins.reduce((acc, ele) => {acc[ele] = ele; return acc;} ,{})
+          : currentTab.origins[0];
+        const subject = {
+          source: `(${currentTab.code})`
+        };
+        let originContext;
+        // метод getData() хелпера датасет-драйвера в режиме бекенда не пересылает контекст,
+        // из-за чего передача датасета выглядит по-разному в двух режимах.
+        if (env.isBackendMode()) {
+          subject.origin = origins;
+          subject.separateDatasets = true;
+        } else {
+          originContext = currentTab.origins.length > 1
+            ? await Promise.all(Object.keys(origins).map(async(id) => {
+              return { [id]: await this.pullData(id) };
+            }))
+            : await this.pullData(origins);
+        }
+        this.pullData(subject, null, null, originContext).then(response => {
           if (response){
             this.showSuccess(currentTab, response);
           }else{
             this.showEmpty(currentTab);
           }
         }).catch(response => {
-          this.showError(currentTab, response);
+          this.showError(currentTab, response.message ?? response);
         });
-      },
-      async backendExec(currentTab){
-        const showUnexpectedError = (data) => {
-          currentTab.unexpectedError = data;
-        };
-
-        if (currentTab.controller && currentTab.controller.abort) {
-          currentTab.controller.abort();
-        }
-
-        let request;
-        currentTab.controller = new AbortController();
-
-        currentTab.loading = true;
-
-        try {
-          request = await fetch(`${backendFileStorageURL}jsonata/(${encodeURIComponent(currentTab.code)})?params=null&subject=null`, {
-            signal: currentTab.controller.signal
-          });
-
-        } catch (e) {
-          if(e.name === 'AbortError') {
-            return;
-          }
-          return showUnexpectedError(`Ошибка при обращении к API: ${e}`);
-        }
-        currentTab.loading = false;
-
-        if (isServerFailStatus(request.status) ) {
-          return showUnexpectedError(`Произошла ошибка на сервере: ${request.status}`);
-        }
-
-        let jsonData;
-        try {
-          jsonData = await request.json();
-        } catch (e) {
-          return this.showEmpty(currentTab);
-        }
-
-        if (request.status === 500) {
-          return this.showError(currentTab, jsonData);
-        }
-
-        return this.showSuccess(currentTab, jsonData);
       },
       onChange(code) {
         const currentTab = this.tabs[this.selectedTab];
 
         currentTab.code = code;
 
-        if (this.autoExec){
-          this.exec();
-        }
+        this.manualAutoExec();
+      },
+      onOriginChange(origins) {
+        this.tabs[this.selectedTab].origins = origins;
+        this.manualAutoExec(true);
       }
     }
   };

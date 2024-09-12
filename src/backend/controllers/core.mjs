@@ -6,7 +6,7 @@ import helpers from './helpers.mjs';
 import compression from '../../global/compress/compress.mjs';
 import {getRoles, getUserName} from '../helpers/jwt.mjs';
 import logger from '../utils/logger.mjs';
-import {DEFAULT_ROLE, getCurrentRuleId, getCurrentRules, isRolesMode} from "../utils/rules.mjs";
+import {DEFAULT_ROLE, getCurrentRuleId, getCurrentRules, isRolesMode} from '../utils/rules.mjs';
 
 const compressor = compression();
 
@@ -80,7 +80,7 @@ export default (app) => {
           userName,
           time: Date.now() - start,
           originalUrl: req.originalUrl
-        })
+        });
         logger.log(jsonLog, LOG_TAG);
     });
 
@@ -96,7 +96,7 @@ export default (app) => {
         } else {
             let userName;
             if(isRolesMode()) {
-                app.storage = {...app.storage, manifests: null}
+                app.storage = {...app.storage, manifests: null};
             }
             const oldHash = app.storage.hash;
             await storeManager.reloadManifest(app)
@@ -109,7 +109,7 @@ export default (app) => {
               userName,
               time: Date.now() - start,
               originalUrl: req.route.path
-            })
+            });
             logger.log(jsonLog, LOG_TAG);
         }
     });
@@ -142,7 +142,7 @@ export default (app) => {
             };
         }
 
-        await cache.pullFromCache(app.storage.hash, JSON.stringify(key), async () => {
+        await cache.pullFromCache(app.storage.hash, JSON.stringify(key), async() => {
                 if (request.query.startsWith('/'))
                     return await datasets(app).releaseData(request.query, request.params);
                 else {
@@ -163,9 +163,14 @@ export default (app) => {
                             return;
                         }
                         return await ds.getData(path.context, profile, params, path.baseURI);
-                    } else {
-                        return await ds.getData(storageManifest, profile, params);
+                    } 
+                    if (profile.separateDatasets && typeof profile.origin === 'object') {
+                        const origin = await Promise.all(Object.keys(profile.origin).map(async(id) => {
+                            return { [id]: await ds.releaseData(`/datasets/${id}`) };
+                        }));
+                        return await ds.getData(origin, { source: profile.source}, params);
                     }
+                    return await ds.getData(storageManifest, profile, params);
                 }
             }, res);
 
@@ -173,7 +178,7 @@ export default (app) => {
               userName,
               time: Date.now() - start,
               originalUrl: req.originalUrl
-            })
+            });
             logger.log(jsonLog, LOG_TAG);
     });
 
@@ -201,7 +206,7 @@ export default (app) => {
           userName,
           time: Date.now() - start,
           originalUrl: req.originalUrl
-        })
+        });
         logger.log(jsonLog, LOG_TAG);
     });
 };
