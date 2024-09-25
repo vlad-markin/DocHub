@@ -210,6 +210,10 @@
           const animation = this.makeAnimation();
           animation && result.push(animation);
         }
+        if (!isArrow && this.track.link.style.includes('..')) {
+          result.push('track-dashed');
+        }
+
         return result.join(' ');
       },
       // Определяет классы анимации
@@ -244,6 +248,7 @@
                 throw `Неизвестное направление стрелки ${direction} для связи ${this.track.id}`;
             }
           case '-': return '';
+          case '.': return '';
           default:
             throw `Неизвестный тип стрелки ${style} для связи ${this.track.id}`;
         }
@@ -320,6 +325,10 @@
 .track-highlight {
   stroke: #ff0000;
   z-index: 10000;
+}
+
+.track-dashed {
+  stroke-dasharray: 10;
 }
 
 .title-highlight {
