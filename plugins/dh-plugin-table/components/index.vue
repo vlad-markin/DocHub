@@ -206,6 +206,10 @@
           for (let headerID in this.tableHeaders) {
             const { save, type } = this.tableHeaders[headerID];
 
+            if (!save) {
+              continue;
+            }
+
             const { path, entity } = save;
 
             let tableValue = tableRow[headerID];
