@@ -1,0 +1,311 @@
+<template>
+  <div class="plugin">
+    <template v-if="!isDataLoaded">
+      <v-alert> Тружусь... </v-alert>
+      <v-skeleton-loader type="table-row@6" />
+    </template>
+
+    <v-alert v-else-if="errorMessage" class="error" icon="warning">
+      {{ errorMessage }}
+    </v-alert>
+
+    <dh-table
+      v-else
+      v-bind:table-data="tableData"
+      v-bind:headers="Object.values(tableHeaders)"
+      v-bind:direction="profile.direction === 'ttb' ? 'ttb' : 'ltr'"
+      v-bind:selection="profile.selection === true"
+      v-bind:page-size="profile.page_size ?? 20"
+      v-bind:is-table-editable="isTableEditable"
+      v-bind:is-table-filterable="isTableFilterable"
+      v-on:on-save="saveTableToFiles" />
+  </div>
+</template>
+
+<script>
+  import yaml from 'yaml';
+  import Table from './Table/Table.vue';
+  import { parseSelectOptions } from '../lib/helpers';
+
+  export default {
+    components: {
+      'dh-table': Table
+    },
+    props: {
+      profile: {
+        type: Object,
+        required: true
+      },
+      getContent: {
+        type: Function,
+        required: true
+      },
+      putContent: {
+        type: Function,
+        default: null,
+        required: false
+      },
+      pullData: {
+        type: Function,
+        required: true
+      }
+    },
+
+    data() {
+      return {
+        isDataLoaded: false,
+        tableData: {},
+        tableHeaders: [],
+        errorMessage: null,
+
+        isTableEditable: false,
+        isTableFilterable: false
+      };
+    },
+
+    mounted() {
+      this.prepareHeaders();
+      this.loadTableData();
+    },
+
+    methods: {
+      async prepareHeaders() {
+        this.errorMessage = null;
+        const headers = this.profile.headers;
+        if (!headers) {
+          this.errorMessage = 'Не заполнены заголовки (headers) для таблицы';
+          return;
+        }
+
+        for (let i = 0; i < headers.length; i++) {
+          const {
+            value,
+            text = value,
+            type = 'text',
+            editable = false,
+            sortable = true,
+            filterable = true,
+            options,
+            save,
+            width = 'auto',
+            pinned = false,
+            style = {},
+            styles
+          } = headers[i];
+
+          if (!value) {
+            this.errorMessage = 'Не задано значение идентификатора (value) для headers';
+            return;
+          }
+
+          this.tableHeaders[value] = {
+            headerID: value,
+            text,
+            type,
+            disabled: !editable,
+            sortable,
+            options,
+            save,
+            filterable: this.profile.filtration === false ? false : filterable,
+            width,
+            pinned,
+            styles: {
+              _default: style,
+              ...styles
+            }
+          };
+
+          if (!this.isTableFilterable && filterable) {
+            this.isTableFilterable = true;
+          }
+
+          if (!this.isTableEditable && editable) {
+            this.isTableEditable = true;
+          }
+
+          if (!this.isTableFilterable && this.tableHeaders[value].filterable) {
+            this.isTableFilterable = true;
+          }
+
+          if (type === 'select' || type === 'multiple-select') {
+            if (!options) {
+              this.errorMessage = `Не указаны опции для селектора ("options"). Проверте значение "options" для ${value}`;
+              return;
+            }
+            if (typeof options === 'string') {
+              const jsonata = `
+              (
+                $."${options}"
+              )`;
+              try {
+                const res = await this.pullData(jsonata);
+                if (res === undefined) {
+                  this.errorMessage = `Не удалось получить "${value}/options" по идентификатору ${jsonata}`;
+                  return;
+                }
+                this.tableHeaders[value].options = parseSelectOptions(res);
+              } catch (err) {
+                this.errorMessage = `JSONata запрос "${jsonata}" завершился с ошибкой. Проверте значение в "headers/${value}/options"`;
+                // eslint-disable-next-line no-console
+                console.log(err);
+              }
+            }
+          }
+        }
+      },
+
+      loadTableData() {
+        this.isDataLoaded = false;
+        this.pullData()
+          .then((data) => {
+            for (let rowID in data) {
+              const row = data[rowID];
+
+              this.tableData[rowID] = {};
+
+              for (let headerID in this.tableHeaders) {
+                const { type } = this.tableHeaders[headerID];
+
+                if (type === 'checkbox') {
+                  this.tableData[rowID][headerID] = !!row[headerID];
+                  continue;
+                }
+                this.tableData[rowID][headerID] = row[headerID] ?? null;
+              }
+            }
+            this.isDataLoaded = true;
+          })
+          .catch((err) => {
+            alert(err);
+            this.errorMessage =
+              'Не удалось загрузить данные для таблицы. Пожалуйста, проверте корректность заполнения "source"';
+            // eslint-disable-next-line no-console
+            console.log(err);
+          });
+      },
+
+      async getDataFromFile(path) {
+        return this.getContent(path)
+          .then(({ data }) => {
+            return data;
+          })
+          .catch((err) => {
+            // eslint-disable-next-line no-console
+            console.log(
+              `Не удалось получить данные из файла "${path}". При сохранении, будет создан новый файл`,
+              err
+            );
+            return {};
+          });
+      },
+
+      mergeDataTable(slicedData) {
+        for (let rowID in this.tableData) {
+          const tableRow = this.tableData[rowID];
+
+          for (let headerID in this.tableHeaders) {
+            const { save, type } = this.tableHeaders[headerID];
+
+            const { path, entity } = save;
+
+            let tableValue = tableRow[headerID];
+
+            if (type === 'checkbox' && !tableValue) {
+              tableValue = false;
+            } else if (
+              !tableValue ||
+              (Array.isArray(tableValue) && tableValue.length === 0)
+            ) {
+              delete slicedData[path]?.[entity]?.[rowID]?.[headerID];
+
+              const originRow = slicedData[path]?.[entity]?.[rowID];
+              if (originRow && Object.keys(originRow).length === 0) {
+                delete slicedData[path]?.[entity]?.[rowID];
+              }
+
+              const entitySlice = slicedData[path]?.[entity];
+              if (entitySlice && Object.keys(entitySlice).length === 0) {
+                delete slicedData[path]?.[entity];
+              }
+
+              continue;
+            }
+
+            if (!slicedData[path]) {
+              slicedData[path] = {};
+            }
+
+            if (!slicedData[path][entity]) {
+              slicedData[path][entity] = {};
+            }
+
+            if (!slicedData[path][entity][rowID]) {
+              slicedData[path][entity][rowID] = {};
+            }
+
+            slicedData[path][entity][rowID][headerID] = tableValue;
+          }
+        }
+      },
+
+      getPathList() {
+        const pathList = new Set();
+        for (let columnId in this.tableHeaders) {
+          const { save } = this.tableHeaders[columnId];
+          if (save) {
+            pathList.add(save.path);
+          }
+        }
+        return [...pathList];
+      },
+
+      async saveTableToFiles() {
+        const pathList = this.getPathList();
+
+        Promise.all(pathList.map((path) => this.getDataFromFile(path)))
+          .then((slices) =>
+            slices.map((slice, ind) => ({ [pathList[ind]]: slice }))
+          )
+          .then((slices) => Object.assign({}, ...slices))
+          .then((slicedData) => {
+            this.mergeDataTable(slicedData);
+            return slicedData;
+          })
+          .then((updatedSlicedData) => {
+            for (let path in updatedSlicedData) {
+              if (!updatedSlicedData[path]) {
+                continue;
+              }
+              const slice =
+                Object.keys(updatedSlicedData[path]).length === 0
+                  ? ''
+                  : yaml.stringify(updatedSlicedData[path]);
+
+              this.putContent(path, slice);
+            }
+          });
+      }
+    }
+
+  };
+</script>
+
+<style scoped>
+.plugin {
+  --color-border: #e2e2e2;
+  --color-bg-selected: #eee;
+  --color-bg-filter: #eee;
+  --color-bg-header: #3495db;
+  --color-bg-cell: white;
+  --color-primary: #3495db;
+  --color-select: #d1ecff;
+  --color-bg-icon: rgba(134, 134, 134);
+
+  --width-size-select: 55px;
+}
+
+.action-block {
+  display: flex;
+  gap: 8px;
+}
+</style>
