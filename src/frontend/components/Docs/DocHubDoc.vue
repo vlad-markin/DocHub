@@ -6,7 +6,7 @@
       <div>{{ error }}</div>
     </v-alert>
     <template v-if="!isReloading && !error">
-      <component 
+      <component
         v-bind:is="is"
         v-if="is"
         v-bind:inline="inline"
@@ -53,7 +53,7 @@
   import DocNetwork from './DocNetwork.vue';
   import DocSmartants from './DocSmartAnts.vue';
   import Spinner from '@front/components/Controls/Spinner.vue';
-  
+
   // Встроенные типы документов
   const inbuiltTypes = {
     [DocTypes.ASYNCAPI]: 'async-api-component',
@@ -66,7 +66,7 @@
     [DocTypes.SMARTANTS]: 'doc-smartants'
   };
 
-  
+
   export default {
     name: 'DocHubDoc',
     components: {
@@ -89,7 +89,7 @@
       inline: { type: Boolean, default: false },
       // Параметры передающиеся в запросы документа
       // Если undefined - берутся из URL
-      params: { 
+      params: {
         type: Object,
         default: undefined
       },
@@ -116,7 +116,7 @@
         return window.EventBus;
       },
       is() {
-        return inbuiltTypes[this.docType] 
+        return inbuiltTypes[this.docType]
           || (this.$store.state.plugins.documents[this.docType] && `plugin-doc-${this.docType}`)
           || null;
       },
@@ -201,7 +201,7 @@
       },
       resolveParams() {
         return this.params || this.$router.currentRoute.query || {};
-      },  
+      },
       // Определяем текущий путь к профилю документа
       resolvePath() {
         if (this.path === '$URL$') return this.$router.history.current.path;
@@ -229,8 +229,10 @@
       pullData(expression, self_, params, context) {
         if (!expression) {
           return this.dataProvider.releaseData(this.resolvePath(), params || this.params);
-        } else
-          return this.dataProvider.getData(context, { source: expression }, params);
+        }
+        const subject = expression.source ? expression : { source: expression };
+        return this.dataProvider.getData(context, subject, params);
+
       }
     }
   };

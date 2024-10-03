@@ -64,7 +64,7 @@
   export default {
     props: {
       isPrintVersion: { type: Boolean, default: false },
-      selectedNodes: { type: Array, default: null },
+      selectedNodes: { type: Object, default: null },
       focusNodes: { type: Array, default: null },
       isUnwisp: { type: Boolean, default: false },
       isShowLinks: { type: Boolean, default: false },
@@ -98,6 +98,7 @@
   max-width: calc(100% - 32px);
   display: inline-flex;
   left: 10px;
+  background: transparent !important;
 }
 
 

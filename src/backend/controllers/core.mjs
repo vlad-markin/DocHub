@@ -4,16 +4,17 @@ import cache from '../storage/cache.mjs';
 import queries from '../../global/jsonata/queries.mjs';
 import helpers from './helpers.mjs';
 import compression from '../../global/compress/compress.mjs';
-import {getRoles} from '../helpers/jwt.mjs';
-import {DEFAULT_ROLE, getCurrentRuleId, getCurrentRules, isRolesMode} from "../utils/rules.mjs";
+import {getRoles, getUserName} from '../helpers/jwt.mjs';
+import logger from '../utils/logger.mjs';
+import {DEFAULT_ROLE, getCurrentRuleId, getCurrentRules, isRolesMode} from '../utils/rules.mjs';
 
 const compressor = compression();
 
-// const LOG_TAG = 'controller-core';
+const LOG_TAG = 'controller-core';
 export default (app) => {
 
     // Создает ответ на JSONata запрос и при необходимости кэширует ответ
-    function makeJSONataQueryResponse(res, query, params, subject, ruleId) {
+    async function makeJSONataQueryResponse(res, query, params, subject, ruleId) {
         let key;
         if(isRolesMode()) {
             key = { query, params, subject, ruleId };
@@ -58,10 +59,13 @@ export default (app) => {
     // Выполняет произвольные запросы 
     app.get('/core/storage/jsonata/:query', async function(req, res) {
         if (!helpers.isServiceReady(app, res)) return;
+        const start = Date.now();
+        let userName;
 
         let id;
         if(isRolesMode()) {
             const roles = getRoles(req.headers);
+            userName = getUserName(req.headers);
             id = await getCurrentRuleId(roles);
             const currentRules = await getCurrentRules(roles);
             app.storage = {...app.storage, roles: [...currentRules], roleId: id};
@@ -71,11 +75,18 @@ export default (app) => {
             ? `(${queries.makeQuery(queries.QUERIES[request.query], request.params)})`
             : request.query;
 
-        makeJSONataQueryResponse(res, query, request.params, request.subject, id);
+        await makeJSONataQueryResponse(res, query, request.params, request.subject, id);
+        const jsonLog = JSON.stringify({
+          userName,
+          time: Date.now() - start,
+          originalUrl: req.originalUrl
+        });
+        logger.log(jsonLog, LOG_TAG);
     });
 
     // Запрос на обновление манифеста
-    app.put('/core/storage/reload', function(req, res) {
+    app.put('/core/storage/reload', async function(req, res) {
+        const start = Date.now();
         const reloadSecret = req.query.secret;
         if (reloadSecret !== process.env.VUE_APP_DOCHUB_RELOAD_SECRET) {
             res.status(403).json({
@@ -83,20 +94,31 @@ export default (app) => {
             });
             return;
         } else {
+            let userName;
             if(isRolesMode()) {
-                app.storage = {...app.storage, manifests: null}
+                app.storage = {...app.storage, manifests: null};
             }
             const oldHash = app.storage.hash;
-            storeManager.reloadManifest(app)
+            await storeManager.reloadManifest(app)
                 .then((storage) => storeManager.applyManifest(app, storage))
                 .then(() => cache.clearCache(oldHash))
                 .then(() => res.json({ message: 'success' }));
+
+            userName = getUserName(req.headers);
+            const jsonLog = JSON.stringify({
+              userName,
+              time: Date.now() - start,
+              originalUrl: req.route.path
+            });
+            logger.log(jsonLog, LOG_TAG);
         }
     });
 
     // Выполняет произвольные запросы 
     app.get('/core/storage/release-data-profile/:query', async function(req, res) {
         if (!helpers.isServiceReady(app, res)) return;
+        const start = Date.now();
+        let userName;
 
         const request = parseRequest(req);
 
@@ -110,6 +132,7 @@ export default (app) => {
             const roles = getRoles(req.headers);
             const id = await getCurrentRuleId(roles);
             const currentRules = await getCurrentRules(roles);
+            userName = getUserName(req.headers);
             app.storage = {...app.storage, roles: [...currentRules], roleId: id};
             storageManifest = app.storage.manifests[id];
             key ={
@@ -119,7 +142,7 @@ export default (app) => {
             };
         }
 
-        cache.pullFromCache(app.storage.hash, JSON.stringify(key), async () => {
+        await cache.pullFromCache(app.storage.hash, JSON.stringify(key), async() => {
                 if (request.query.startsWith('/'))
                     return await datasets(app).releaseData(request.query, request.params);
                 else {
@@ -140,21 +163,37 @@ export default (app) => {
                             return;
                         }
                         return await ds.getData(path.context, profile, params, path.baseURI);
-                    } else {
-                        return await ds.getData(storageManifest, profile, params);
+                    } 
+                    if (profile.separateDatasets && typeof profile.origin === 'object') {
+                        const origin = await Promise.all(Object.keys(profile.origin).map(async(id) => {
+                            return { [id]: await ds.releaseData(`/datasets/${id}`) };
+                        }));
+                        return await ds.getData(origin, { source: profile.source}, params);
                     }
+                    return await ds.getData(storageManifest, profile, params);
                 }
             }, res);
+
+            const jsonLog = JSON.stringify({
+              userName,
+              time: Date.now() - start,
+              originalUrl: req.originalUrl
+            });
+            logger.log(jsonLog, LOG_TAG);
     });
 
     // Возвращает результат работы валидаторов
     app.get('/core/storage/problems/', async function(req, res) {
         if (!helpers.isServiceReady(app, res)) return;
+        const start = Date.now();
+        let userName;
+
 
         if(isRolesMode()) {
             const roles = getRoles(req.headers);
             const currentRules = await getCurrentRules(roles);
             const id = await getCurrentRuleId(roles);
+            userName = getUserName(req.headers);
             app.storage = {...app.storage, roles: [...currentRules], roleId: id};
 
             if (!checkRulesManifest(id)) {
@@ -163,6 +202,12 @@ export default (app) => {
             }
         }
         res.json(app.storage.problems || []);
+        const jsonLog = JSON.stringify({
+          userName,
+          time: Date.now() - start,
+          originalUrl: req.originalUrl
+        });
+        logger.log(jsonLog, LOG_TAG);
     });
 };
 

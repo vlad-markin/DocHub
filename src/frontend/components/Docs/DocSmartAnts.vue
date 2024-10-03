@@ -6,23 +6,26 @@
           {{ isFullScreen ? 'mdi-close-box-outline' : 'fullscreen' }}
         </v-icon>
       </div>
-      <smartants-bar
-        v-bind:warnings="warnings"
-        v-bind:focus-nodes="focusNodes"
-        v-bind:scenario="scenario"
-        v-bind:scenarios="scenarios"
-        v-bind:is-print-version="isPrintVersion"
-        v-bind:is-show-links="isShowLinks"
-        v-bind:is-unwisp="isUnwisp"
-        v-bind:is-paying="isPaying"
-        v-on:exportToExcalidraw="exportToExcalidraw"
-        v-on:doFocus="doFocus"
-        v-on:clearFocus="clearFocus"
-        v-on:playScenario="playScenario"
-        v-on:playNext="playNext"
-        v-on:setScenario="setScenario"
-        v-on:setUnwisp="setUnwisp"
-        v-on:setShowLinks="setShowLinks" />
+      <div class="fixed">
+        <smartants-bar
+          v-bind:warnings="warnings"
+          v-bind:selected-nodes="selectedNodes"
+          v-bind:focus-nodes="focusNodes"
+          v-bind:scenario="scenario"
+          v-bind:scenarios="scenarios"
+          v-bind:is-print-version="isPrintVersion"
+          v-bind:is-show-links="isShowLinks"
+          v-bind:is-unwisp="isUnwisp"
+          v-bind:is-paying="isPaying"
+          v-on:exportToExcalidraw="exportToExcalidraw"
+          v-on:doFocus="doFocus"
+          v-on:clearFocus="clearFocus"
+          v-on:playScenario="playScenario"
+          v-on:playNext="playNext"
+          v-on:setScenario="setScenario"
+          v-on:setUnwisp="setUnwisp"
+          v-on:setShowLinks="setShowLinks" />
+      </div>
       <schema
         ref="schema"
         v-model="status"
@@ -194,17 +197,23 @@
       },
       // Возвращает SVG код диаграммы
       getSvg() {
+        const RelevantStyles = {
+          rect: ['font-size', 'fill', 'filter', 'opacity', 'stroke', 'stroke-linejoin', 'stroke-width'],
+          path: ['fill', 'opacity', 'stroke', 'stroke-linecap', 'stroke-linejoin', 'stroke-width', 'z-index'],
+          text: ['color', 'fill', 'font-family', 'font-size', 'font-weight', 'line-height', 'opacity', 'stroke', 'text-rendering', 'text-size-adjust', 'z-index']
+        };
         const addStyle = function(children) {
           for (let i = 0; i < children.length; i++) {
             let child = children[i];
+            let tag = child.tagName;
             if (child instanceof Element) {
               let cssText = '';
               let computedStyle = window.getComputedStyle(child, null);
-              for (let i = 0; i < computedStyle.length; i++) {
-                let prop = computedStyle[i];
+              for (let i = 0; i < RelevantStyles[tag]?.length ?? 0; i++) {
+                const prop = RelevantStyles[tag][i];
                 cssText += prop + ':' + computedStyle.getPropertyValue(prop) + ';';
               }
-              child.setAttribute('style', cssText);
+              cssText && child.setAttribute('style', cssText);
               addStyle(child.childNodes);
             }
           }
@@ -212,9 +221,12 @@
 
         const svgElement = this.$refs.schema.$el;
         addStyle(svgElement.childNodes);
+        svgElement.style.width = svgElement.clientWidth;
 
         const serializer = new XMLSerializer();
         let source = serializer.serializeToString(svgElement);
+
+        svgElement.style.width = '';
 
         // eslint-disable-next-line no-useless-escape
         if(!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)){
@@ -341,16 +353,28 @@
   };
 </script>
 
+<style>
+.fixed {
+  width: inherit;
+  position: fixed;
+  background: transparent;
+}
+.markdown-document .fixed {
+  position: static;
+}
+
+</style>
+
 <style scoped>
 .schema {
   /* border: solid 2px #ff0000; */
   aspect-ratio : 1 / 0.6;
   width: 100%;
   min-width: 100%;
+  margin-top: 60px;
 }
 
 .container {
-  position: relative;
   position: relative;
 }
 
