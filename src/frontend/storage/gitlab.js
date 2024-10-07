@@ -363,6 +363,7 @@ export default {
                 url: OAuthURL,
                 params: Object.assign({
                     client_id: config.oauth.APP_ID,
+                    client_secret: config.oauth.CLIENT_SECRET,
                     redirect_uri: (new URL(consts.pages.OAUTH_CALLBACK_PAGE, window.location)).toString()
                 }, params)
             })
