@@ -301,9 +301,9 @@ npm run build
 * [Группа DocHubTeam](https://t.me/archascode)
 * [Канал "Архитектура как код"](https://t.me/dochubchannel)
 
-# Динамика роста популярности
+# Динамика роста звезд на GitHub
 
-Каждая звезда DocHub, это камень в фундамент подхода "Архитектура как код"!
+Каждая [звезда DocHub](#), это камень в фундамент подхода "Архитектура как код"!
  
 [![Звезды на GitHub](https://starchart.cc/RabotaRu/DocHub.svg?variant=adaptive)](https://starchart.cc/RabotaRu/DocHub)
 
