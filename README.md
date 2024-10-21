@@ -7,9 +7,10 @@
 DocHub - инструмент описания архитектуры через код (Architecture as a code). Код архитектуры - ансамбль файлов на языках,
 решающих задачу описания. Поддерживаются:
 
-* [PlantUML](https://plantuml.com/) - позволяет создавать диаграммы, используя простой и интуитивно понятный язык;
-* [Mermaid](https://mermaid-js.github.io/mermaid/#/) - позволяет создавать диаграммы с использованием кода;
 * [Markdown](https://ru.wikipedia.org/wiki/Markdown) - язык разметки, созданный с целью обозначения форматирования в тексте;
+* [PlantUML](https://plantuml.com/) - позволяет создавать диаграммы, используя простой и интуитивно понятный язык;
+* [BPMN](https://dochub.info/entities/docs/blank?dh-doc-id=dochub.bpmn) - Поддерживается BPMN нотация описания бизнес-процессов с использованием [bpmnjs](https://bpmn.io/);
+* [Mermaid](https://mermaid-js.github.io/mermaid/#/) - позволяет создавать диаграммы с использованием кода;
 * [Swagger](https://swagger.io/) - язык описания HTTP API контрактов;
 * [AsyncAPI](https://www.asyncapi.com/) - язык описания событийных контрактов;
 * [SmartAnts](https://dochub.info/docs/dochub.smartants) - продвинутый инструмент презентации архитектуры.
