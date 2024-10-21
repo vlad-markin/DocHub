@@ -298,7 +298,10 @@ npm run build
 * [Группа DocHubTeam](https://t.me/archascode)
 * [Канал "Архитектура как код"](https://t.me/dochubchannel)
 
-# Комьюнити взнос за пользование продуктом
+# Лицензия
+DocHub распространяется под лицензией Apache License 2.0 Open source license.
+
+# Комьюнити-взнос за пользование продуктом
 
 ## Проблема
 
@@ -341,8 +344,4 @@ npm run build
     
     По запросу любой организации на ящик [r.piontik@mail.ru](r.piontik@mail.ru) информация об использовании ей DocHub будет удалена. Дальнейшее использование DocHub этой компанией запрещается без 
     согласования условий возобновления использования с автором DocHub [R.Piontik](r.piontik@mail.ru).
-
-# Лицензия
-DocHub распространяется под лицензией Apache License 2.0 Open source license.
-
 
