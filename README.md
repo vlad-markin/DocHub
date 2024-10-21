@@ -2,6 +2,9 @@
 
 ![Инкрементальное развитие архитектуры](pics/interface.png)
 
+[![CodeFactor](https://www.codefactor.io/repository/github/rabotaru/dochub/badge)](https://www.codefactor.io/repository/github/rabotaru/dochub)
+![GitHub License](https://img.shields.io/github/license/rabotaru/dochub)
+
 DocHub - инструмент описания архитектуры через код (Architecture as a code). Код архитектуры - ансамбль файлов на языках,
 решающих задачу описания. Поддерживаются:
 
@@ -297,6 +300,10 @@ npm run build
 # Сообщество
 * [Группа DocHubTeam](https://t.me/archascode)
 * [Канал "Архитектура как код"](https://t.me/dochubchannel)
+
+# Динамика роста популярности 
+ 
+[![Звезды на GitHub](https://starchart.cc/RabotaRu/DocHub.svg?variant=adaptive)](https://starchart.cc/RabotaRu/DocHub)
 
 # Лицензия
 DocHub распространяется под лицензией Apache License 2.0 Open source license.
