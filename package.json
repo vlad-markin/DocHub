@@ -28,8 +28,8 @@
     "postinstall": "find plugins -maxdepth 1 -type d -exec sh -c \"cd '{}' && if [ -f package.json ]; then npm install; fi\" \\;"
   },
   "dependencies": {
-    "@asyncapi/react-component": "1.0.0-next.44",
-    "@asyncapi/web-component": "0.24.23",
+    "@asyncapi/react-component": "2.3.4",
+    "@asyncapi/web-component": "2.3.4",
     "@mdi/font": "5.9.55",
     "@mermaid-js/mermaid-mindmap": "9.3.0",
     "ajv": "8.12.0",
