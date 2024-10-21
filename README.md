@@ -59,7 +59,7 @@ gantt
         POC mutators                :done, 2023-07-01, 150d
     section Q4 2023
         Framework SEAF              :done, 2023-10-01, 92d
-        Public metamodel repository :active, 2023-10-01, 200d
+        Public metamodel repository :done, 2023-10-01, 200d
     section Q2 2024
         MVP mutators                :done, 2024-01-01, 200d
         Process Disigner tool       :done, 2024-06-01, 120d
