@@ -12,7 +12,9 @@ owner of the original code and provide clear attribution to the project
 
         https://dochub.info
 
-Unless required by applicable law or agreed to in writing, software
+The use of this product or its derivatives for any purpose cannot be a secret.
+
+  Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
