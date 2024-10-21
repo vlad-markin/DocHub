@@ -66,8 +66,9 @@ gantt
         Process Disigner tool       :done, 2024-06-01, 120d
         Architectire Commutiny tool :2024-06-01, 200d
     section Q3 2024
-        WEB DocHub IDE              :active, 2024-09-14, 120d
-        Digital Modeler             :active, 2024-09-14, 120d
+        WEB DocHub IDE                              :active, 2024-09-14, 120d
+        Digital Modeler                             :active, 2024-09-14, 120d
+        AaaC Community Architect Framework (CEAF)   :active, 2024-06-17, 200d
 
 click plugins href "https://dochub.info/docs/dochub.plugins.intro"
 click smartants href "https://dochub.info/docs/dochub.smartants"
