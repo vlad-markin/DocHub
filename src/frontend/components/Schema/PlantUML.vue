@@ -298,6 +298,7 @@
 .plantuml-schema svg {
   width: 100%;
   height: auto;
+  max-height: calc(100vh - 64px);
 }
 .plantuml-place {
   position: relative;
