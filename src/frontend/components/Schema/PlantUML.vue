@@ -156,7 +156,6 @@
             width: Number.parseFloat(parsed[3]),
             height: Number.parseFloat(parsed[4])
           });
-          console.info('>>>>>>>>>>>', {...result});
         } else if (this.svgEl) result = this.svgEl.viewBox.baseVal;
         // eslint-disable-next-line vue/no-side-effects-in-computed-properties
         return result ? (this.cacheViewBox = result) : { x:0, y:0, width:0, height:0 };
